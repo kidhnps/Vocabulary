@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌟 K123 單字大挑戰</title>
+<style>
+:root {
+  --pink: #ff6b9d; --purple: #c44dff; --blue: #4da6ff; --green: #51cf66;
+  --yellow: #ffd43b; --orange: #ff922b; --red: #ff6b6b; --cyan: #22b8cf;
+  --bg1: #1a1a3e; --bg2: #2d1b69; --card: rgba(255,255,255,0.08);
+  --text: #f1f3f5; --text2: #adb5bd;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,var(--bg1),var(--bg2));color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+/* BG particles */
+.bg-particle{position:fixed;border-radius:50%;pointer-events:none;animation:floatUp linear infinite;opacity:0.3;z-index:0;}
+@keyframes floatUp{0%{transform:translateY(100vh) rotate(0deg);opacity:0;}10%{opacity:0.3;}90%{opacity:0.3;}100%{transform:translateY(-10vh) rotate(720deg);opacity:0;}}
+
+.container{position:relative;z-index:1;max-width:600px;margin:0 auto;padding:15px;}
+
+/* Screens */
+.screen{display:none;animation:slideIn 0.5s ease;}
+.screen.active{display:block;}
+@keyframes slideIn{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
+
+/* Title */
+.game-title{text-align:center;padding:25px 0 10px;font-size:2.4em;font-weight:900;background:linear-gradient(135deg,var(--pink),var(--yellow),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:titleBounce 2s ease infinite;}
+@keyframes titleBounce{0%,100%{transform:scale(1);}50%{transform:scale(1.03);}}
+.game-subtitle{text-align:center;color:var(--text2);margin-bottom:25px;font-size:1.05em;}
+
+/* Card */
+.card{background:var(--card);backdrop-filter:blur(10px);border-radius:20px;padding:25px;margin-bottom:15px;border:1px solid rgba(255,255,255,0.1);}
+
+/* Input */
+.input-label{display:block;margin-bottom:8px;font-weight:600;color:var(--cyan);font-size:0.95em;}
+.text-input{width:100%;padding:13px 16px;border-radius:14px;border:2px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:var(--text);font-size:1.05em;outline:none;transition:0.3s;}
+.text-input:focus{border-color:var(--pink);box-shadow:0 0 20px rgba(255,107,157,0.2);}
+select.text-input{cursor:pointer;}
+select.text-input option{background:#2d1b69;color:var(--text);}
+
+/* Grade selector */
+.grade-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:15px 0;}
+.grade-btn{padding:15px 5px;border-radius:14px;border:2px solid transparent;background:rgba(255,255,255,0.06);cursor:pointer;text-align:center;transition:0.3s;color:var(--text);}
+.grade-btn:hover{transform:scale(1.05);border-color:rgba(255,255,255,0.2);}
+.grade-btn.selected{border-color:var(--yellow);background:rgba(255,212,59,0.12);}
+.grade-btn .emoji{font-size:1.8em;display:block;}
+.grade-btn .label{font-weight:700;margin-top:4px;font-size:0.9em;}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:13px 28px;border-radius:14px;border:none;font-size:1.05em;font-weight:700;cursor:pointer;transition:0.3s;color:#fff;}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.1);}
+.btn:active{transform:translateY(0);}
+.btn-pink{background:linear-gradient(135deg,var(--pink),#e64980);box-shadow:0 4px 15px rgba(255,107,157,0.4);}
+.btn-blue{background:linear-gradient(135deg,var(--blue),#3b82f6);box-shadow:0 4px 15px rgba(77,166,255,0.4);}
+.btn-green{background:linear-gradient(135deg,var(--green),#2f9e44);box-shadow:0 4px 15px rgba(81,207,102,0.4);}
+.btn-purple{background:linear-gradient(135deg,var(--purple),#9b59b6);box-shadow:0 4px 15px rgba(196,77,255,0.4);}
+.btn-orange{background:linear-gradient(135deg,var(--orange),#e67700);box-shadow:0 4px 15px rgba(255,146,43,0.4);}
+.btn-block{display:flex;width:100%;}
+.btn-sm{padding:10px 18px;font-size:0.9em;}
+.btn-group{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:15px;}
+
+/* ===== BATTLE SCREEN ===== */
+.battle-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;flex-wrap:wrap;}
+.stat-badge{background:rgba(255,255,255,0.08);padding:8px 14px;border-radius:12px;font-weight:600;font-size:0.9em;}
+.stat-badge .val{color:var(--yellow);font-size:1.15em;}
+
+/* HP Bars */
+.hp-section{margin-bottom:15px;}
+.hp-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.hp-label{font-weight:700;min-width:70px;font-size:0.9em;}
+.hp-bar{flex:1;height:18px;background:rgba(255,255,255,0.1);border-radius:12px;overflow:hidden;position:relative;}
+.hp-fill{height:100%;border-radius:12px;transition:width 0.5s ease;}
+.hp-fill.enemy{background:linear-gradient(90deg,var(--red),var(--orange));}
+.hp-fill.player{background:linear-gradient(90deg,var(--green),var(--cyan));}
+.hp-text{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:0.75em;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,0.5);}
+
+/* Enemy area */
+.enemy-area{text-align:center;padding:15px 0;position:relative;}
+.enemy-sprite{font-size:5em;animation:enemyIdle 1.5s ease infinite;display:inline-block;filter:drop-shadow(0 5px 15px rgba(0,0,0,0.3));transition:0.3s;}
+@keyframes enemyIdle{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+.enemy-sprite.hit{animation:enemyHit 0.5s ease !important;}
+@keyframes enemyHit{0%{transform:scale(1);}20%{transform:scale(0.8) rotate(-10deg);filter:brightness(2) drop-shadow(0 5px 15px rgba(0,0,0,0.3));}100%{transform:scale(1);}}
+.enemy-sprite.dying{animation:enemyDie 0.8s ease forwards !important;}
+@keyframes enemyDie{0%{transform:scale(1);opacity:1;}50%{transform:scale(1.3) rotate(20deg);opacity:0.5;}100%{transform:scale(0) rotate(360deg);opacity:0;}}
+.enemy-name{font-weight:700;font-size:1.1em;margin-top:5px;color:var(--orange);}
+
+/* Question */
+.question-box{text-align:center;padding:15px 0;}
+.q-prompt{font-size:1em;color:var(--text2);margin-bottom:8px;}
+.q-word{font-size:2.5em;font-weight:900;background:linear-gradient(135deg,var(--yellow),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:15px;min-height:60px;}
+.choices-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.choice-btn{padding:14px 10px;border-radius:14px;border:2px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:var(--text);font-size:1.05em;font-weight:600;cursor:pointer;transition:0.2s;text-align:center;}
+.choice-btn:hover{border-color:var(--cyan);background:rgba(77,166,255,0.1);transform:scale(1.03);}
+.choice-btn.correct{border-color:var(--green);background:rgba(81,207,102,0.2);animation:popCorrect 0.4s;}
+.choice-btn.wrong{border-color:var(--red);background:rgba(255,107,107,0.2);animation:shakeWrong 0.4s;}
+@keyframes popCorrect{0%{transform:scale(1);}50%{transform:scale(1.08);}100%{transform:scale(1);}}
+@keyframes shakeWrong{0%,100%{transform:translateX(0);}25%{transform:translateX(-8px);}75%{transform:translateX(8px);}}
+
+/* Timer */
+.timer-section{margin:10px 0;}
+.timer-bar{width:100%;height:8px;background:rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;}
+.timer-fill{height:100%;border-radius:8px;transition:width 0.1s linear;background:linear-gradient(90deg,var(--green),var(--yellow),var(--red));}
+
+/* Props */
+.props-bar{display:flex;gap:8px;justify-content:center;margin:12px 0;flex-wrap:wrap;}
+.prop-btn{display:flex;flex-direction:column;align-items:center;padding:8px 14px;border-radius:14px;border:2px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);cursor:pointer;transition:0.3s;color:var(--text);position:relative;min-width:70px;}
+.prop-btn:hover:not(.disabled){border-color:var(--yellow);transform:scale(1.08);}
+.prop-btn.disabled{opacity:0.35;cursor:not-allowed;}
+.prop-btn .prop-icon{font-size:1.5em;}
+.prop-btn .prop-name{font-size:0.7em;font-weight:600;margin-top:2px;}
+.prop-btn .prop-count{position:absolute;top:-6px;right:-6px;background:var(--pink);color:#fff;width:22px;height:22px;border-radius:50%;font-size:0.75em;font-weight:700;display:flex;align-items:center;justify-content:center;}
+
+/* Feedback */
+.battle-feedback{text-align:center;font-size:1.2em;font-weight:700;min-height:35px;margin:8px 0;}
+.feedback-correct{color:var(--green);}
+.feedback-wrong{color:var(--red);}
+
+/* Damage popup */
+.dmg-popup{position:absolute;font-weight:900;font-size:1.5em;animation:dmgFloat 1s forwards;pointer-events:none;z-index:10;}
+@keyframes dmgFloat{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-60px) scale(1.5);}}
+
+/* Result */
+.result-stars{text-align:center;font-size:3em;margin:10px 0;}
+.result-score{text-align:center;font-size:3.5em;font-weight:900;background:linear-gradient(135deg,var(--yellow),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.result-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:15px 0;}
+.result-item{background:rgba(255,255,255,0.05);padding:15px;border-radius:14px;text-align:center;}
+.result-item .rl{font-size:0.8em;color:var(--text2);}
+.result-item .rv{font-size:1.5em;font-weight:700;color:var(--yellow);}
+
+/* Leaderboard */
+.lb-table{width:100%;border-collapse:collapse;}
+.lb-table th{padding:10px 8px;text-align:left;color:var(--cyan);border-bottom:2px solid rgba(255,255,255,0.1);font-size:0.85em;}
+.lb-table td{padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.9em;}
+.lb-table tr:hover td{background:rgba(255,255,255,0.04);}
+.rank-gold{color:#ffd700;font-weight:900;}
+.rank-silver{color:#c0c0c0;font-weight:700;}
+.rank-bronze{color:#cd7f32;font-weight:700;}
+
+/* New record */
+.new-record-banner{text-align:center;padding:15px;margin:10px 0;background:linear-gradient(135deg,rgba(255,212,59,0.12),rgba(255,107,157,0.12));border:2px solid var(--yellow);border-radius:16px;animation:glowPulse 1.5s infinite alternate;}
+@keyframes glowPulse{0%{box-shadow:0 0 10px rgba(255,212,59,0.2);}100%{box-shadow:0 0 30px rgba(255,212,59,0.5);}}
+
+/* Shield active indicator */
+.shield-active{position:absolute;top:10px;right:10px;font-size:2em;animation:shieldGlow 1s infinite alternate;}
+@keyframes shieldGlow{0%{filter:drop-shadow(0 0 5px var(--cyan));}100%{filter:drop-shadow(0 0 15px var(--cyan));}}
+
+/* Hint overlay */
+.hint-text{color:var(--yellow);font-size:0.9em;margin-top:5px;animation:fadeIn 0.3s;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+
+/* Combo */
+.combo-text{text-align:center;font-weight:700;min-height:28px;font-size:1.1em;color:var(--orange);}
+.combo-text.active{animation:comboPop 0.3s;}
+@keyframes comboPop{0%{transform:scale(1);}50%{transform:scale(1.3);}100%{transform:scale(1);}}
+
+/* Sound toggle */
+.sound-toggle{position:fixed;top:12px;right:12px;z-index:100;background:rgba(255,255,255,0.1);border:none;color:var(--text);width:42px;height:42px;border-radius:50%;cursor:pointer;font-size:1.2em;transition:0.3s;backdrop-filter:blur(5px);}
+.sound-toggle:hover{background:rgba(255,255,255,0.2);transform:scale(1.1);}
+
+.hidden{display:none;}
+
+/* Level transition */
+.level-transition{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:50;animation:fadeIn 0.3s;}
+.level-transition .content{text-align:center;animation:slideIn 0.5s;}
+.level-transition .enemy-preview{font-size:6em;animation:enemyIdle 1.5s ease infinite;}
+.level-transition .level-text{font-size:1.5em;font-weight:700;color:var(--yellow);margin:10px 0;}
+.level-transition .enemy-intro{color:var(--text2);font-size:1.1em;}
+
+/* Responsive */
+@media(max-width:400px){
+  .game-title{font-size:1.8em;}
+  .q-word{font-size:2em;}
+  .choices-grid{grid-template-columns:1fr;}
+  .grade-grid{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+
+<button class="sound-toggle" id="soundToggle" title="音效開關">🔊</button>
+<div id="bgParticles"></div>
+
+<div class="container">
+  <!-- WELCOME SCREEN -->
+  <div class="screen active" id="screenWelcome">
+    <div class="game-title">🌟 K123 單字大挑戰 🌟</div>
+    <div class="game-subtitle">打败可愛小怪獸，成為單字大王！</div>
+    <div class="card">
+      <div style="margin-bottom:15px;">
+        <label class="input-label">👤 勇者名稱</label>
+        <input type="text" class="text-input" id="playerName" placeholder="輸入你的名字..." maxlength="10" autocomplete="off">
+      </div>
+      <div>
+        <label class="input-label">📚 選擇年級</label>
+        <div class="grade-grid">
+          <div class="grade-btn selected" data-grade="K" onclick="selectGrade('K')">
+            <span class="emoji">🧒</span><span class="label">K 幼兒園</span>
+          </div>
+          <div class="grade-btn" data-grade="1" onclick="selectGrade('1')">
+            <span class="emoji">🎒</span><span class="label">1 年級</span>
+          </div>
+          <div class="grade-btn" data-grade="2" onclick="selectGrade('2')">
+            <span class="emoji">📖</span><span class="label">2 年級</span>
+          </div>
+          <div class="grade-btn" data-grade="3" onclick="selectGrade('3')">
+            <span class="emoji">🎓</span><span class="label">3 年級</span>
+          </div>
+        </div>
+      </div>
+      <div style="margin-bottom:15px;">
+        <label class="input-label">🗺️ 關卡數量</label>
+        <select class="text-input" id="stageCount">
+          <option value="3">3 關（快速冒險）</option>
+          <option value="5" selected>5 關（標準冒險）</option>
+          <option value="8">8 關（史詩冒險）</option>
+        </select>
+      </div>
+      <button class="btn btn-pink btn-block" onclick="startAdventure()">⚔️ 開始冒險！</button>
+    </div>
+    <div style="text-align:center;margin-top:10px;">
+      <button class="btn btn-orange btn-sm" onclick="showScreen('screenLB');renderLB();">🏆 英雄榜</button>
+    </div>
+  </div>
+
+  <!-- BATTLE SCREEN -->
+  <div class="screen" id="screenBattle">
+    <div class="battle-header">
+      <div class="stat-badge">🏰 第 <span class="val" id="bStage">1</span> 關</div>
+      <div class="stat-badge">⚔️ <span class="val" id="bScore">0</span> 分</div>
+      <div class="stat-badge">🔥 <span class="val" id="bCombo">0</span> 連擊</div>
+    </div>
+    <div class="hp-section">
+      <div class="hp-row">
+        <span class="hp-label" id="enemyNameLabel">👾 小史萊姆</span>
+        <div class="hp-bar"><div class="hp-fill enemy" id="enemyHpFill" style="width:100%"><span class="hp-text" id="enemyHpText">3/3</span></div></div>
+      </div>
+      <div class="hp-row">
+        <span class="hp-label">❤️ 勇者</span>
+        <div class="hp-bar"><div class="hp-fill player" id="playerHpFill" style="width:100%"><span class="hp-text" id="playerHpText">5/5</span></div></div>
+      </div>
+    </div>
+    <div class="enemy-area" id="enemyArea">
+      <div class="enemy-sprite" id="enemySprite">🟢</div>
+      <div class="enemy-name" id="enemyNameDisplay">小史萊姆</div>
+    </div>
+    <div class="timer-section"><div class="timer-bar"><div class="timer-fill" id="timerFill" style="width:100%"></div></div></div>
+    <div class="props-bar" id="propsBar">
+      <div class="prop-btn" id="propHint" onclick="useProp('hint')"><span class="prop-icon">💡</span><span class="prop-name">提示</span><span class="prop-count" id="propHintCount">3</span></div>
+      <div class="prop-btn" id="propShield" onclick="useProp('shield')"><span class="prop-icon">🛡️</span><span class="prop-name">護盾</span><span class="prop-count" id="propShieldCount">2</span></div>
+      <div class="prop-btn" id="propBomb" onclick="useProp('bomb')"><span class="prop-icon">💣</span><span class="prop-name">炸彈</span><span class="prop-count" id="propBombCount">1</span></div>
+      <div class="prop-btn" id="propTime" onclick="useProp('time')"><span class="prop-icon">⏰</span><span class="prop-name">時停</span><span class="prop-count" id="propTimeCount">2</span></div>
+    </div>
+    <div class="combo-text" id="comboText"></div>
+    <div class="question-box">
+      <div class="q-prompt" id="qPrompt">這個英文單字的意思是？</div>
+      <div class="q-word" id="qWord">apple</div>
+      <div id="hintArea"></div>
+      <div class="choices-grid" id="choicesGrid"></div>
+    </div>
+    <div class="battle-feedback" id="battleFeedback"></div>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div class="screen" id="screenResult">
+    <div class="game-title" style="font-size:1.8em;">📊 冒險結果</div>
+    <div id="resultBanner" class="new-record-banner hidden">
+      <div style="font-size:2.5em;">🎉🏆🎉</div>
+      <div style="font-size:1.2em;font-weight:700;color:var(--yellow);">新紀錄！登上英雄榜！</div>
+    </div>
+    <div class="card">
+      <div class="result-stars" id="resultStars">⭐⭐⭐</div>
+      <div class="result-score" id="resultScore">0</div>
+      <div style="text-align:center;color:var(--text2);margin-bottom:10px;">分</div>
+      <div class="result-grid">
+        <div class="result-item"><div class="rl">答對</div><div class="rv" id="rCorrect">0</div></div>
+        <div class="result-item"><div class="rl">答錯</div><div class="rv" id="rWrong">0</div></div>
+        <div class="result-item"><div class="rl">最高連擊</div><div class="rv" id="rCombo">0</div></div>
+        <div class="result-item"><div class="rl">擊敗怪物</div><div class="rv" id="rKills">0</div></div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-pink" onclick="startAdventure()">🔄 再挑戰</button>
+        <button class="btn btn-orange" onclick="showScreen('screenLB');renderLB();">🏆 英雄榜</button>
+        <button class="btn btn-blue" onclick="showScreen('screenWelcome')">🏠 回首頁</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD SCREEN -->
+  <div class="screen" id="screenLB">
+    <div class="game-title" style="font-size:1.8em;">🏆 英雄榜</div>
+    <div class="card"><div id="lbContent"></div>
+      <div class="btn-group">
+        <button class="btn btn-pink" onclick="showScreen('screenWelcome')">🏠 回首頁</button>
+        <button class="btn btn-orange btn-sm" onclick="clearLB()">🗑️ 清除紀錄</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Level transition overlay -->
+<div class="level-transition" id="levelTransition" style="display:none">
+  <div class="content">
+    <div class="level-text" id="ltLevelText">第 1 關</div>
+    <div class="enemy-preview" id="ltEnemyPreview">🟢</div>
+    <div class="enemy-intro" id="ltEnemyIntro">小史萊姆 出現了！</div>
+  </div>
+</div>
+
+<script>
+// ===== VOCABULARY DATABASE =====
+const WORDS = {
+  K: [
+    {en:'apple',zh:'蘋果'},{en:'cat',zh:'貓'},{en:'dog',zh:'狗'},{en:'fish',zh:'魚'},
+    {en:'bird',zh:'鳥'},{en:'milk',zh:'牛奶'},{en:'egg',zh:'蛋'},{en:'sun',zh:'太陽'},
+    {en:'moon',zh:'月亮'},{en:'star',zh:'星星'},{en:'book',zh:'書'},{en:'pen',zh:'筆'},
+    {en:'red',zh:'紅色'},{en:'blue',zh:'藍色'},{en:'big',zh:'大的'},{en:'small',zh:'小的'},
+    {en:'water',zh:'水'},{en:'rice',zh:'米飯'},{en:'hand',zh:'手'},{en:'eye',zh:'眼睛'},
+    {en:'ear',zh:'耳朵'},{en:'nose',zh:'鼻子'},{en:'mouth',zh:'嘴巴'},{en:'head',zh:'頭'},
+    {en:'cake',zh:'蛋糕'},{en:'duck',zh:'鴨子'},{en:'pig',zh:'豬'},{en:'bear',zh:'熊'},
+    {en:'lion',zh:'獅子'},{en:'frog',zh:'青蛙'},{en:'ant',zh:'螞蟻'},{en:'bee',zh:'蜜蜂'},
+    {en:'bat',zh:'蝙蝠'},{en:'cow',zh:'牛'},{en:'fox',zh:'狐狸'},{en:'hen',zh:'母雞'},
+    {en:'owl',zh:'貓頭鷹'},{en:'rat',zh:'大老鼠'},{en:'crab',zh:'螃蟹'},
+    {en:'deer',zh:'鹿'},{en:'goat',zh:'山羊'},{en:'wolf',zh:'狼'},{en:'mouse',zh:'小老鼠'},
+    {en:'horse',zh:'馬'},{en:'sheep',zh:'羊'},{en:'snake',zh:'蛇'},{en:'whale',zh:'鯨魚'},
+    {en:'pink',zh:'粉紅色'},{en:'green',zh:'綠色'},{en:'yellow',zh:'黃色'},{en:'black',zh:'黑色'},
+    {en:'white',zh:'白色'},{en:'gray',zh:'灰色'},{en:'brown',zh:'棕色'},{en:'purple',zh:'紫色'},
+    {en:'one',zh:'一'},{en:'two',zh:'二'},{en:'three',zh:'三'},{en:'four',zh:'四'},
+    {en:'five',zh:'五'},{en:'six',zh:'六'},{en:'seven',zh:'七'},{en:'eight',zh:'八'},
+    {en:'nine',zh:'九'},{en:'ten',zh:'十'},{en:'hot',zh:'熱的'},{en:'cold',zh:'冷的'},
+    {en:'tall',zh:'高的'},{en:'short',zh:'矮的'},{en:'new',zh:'新的'},{en:'old',zh:'舊的'},
+    {en:'fast',zh:'快的'},{en:'slow',zh:'慢的'},{en:'long',zh:'長的'},{en:'fat',zh:'胖的'},
+    {en:'thin',zh:'瘦的'},{en:'clean',zh:'乾淨的'},{en:'dirty',zh:'髒的'},{en:'dry',zh:'乾的'},
+    {en:'wet',zh:'濕的'},{en:'full',zh:'滿的'},{en:'empty',zh:'空的'},{en:'dark',zh:'暗的'},
+    {en:'light',zh:'亮的'},{en:'hard',zh:'硬的'},{en:'soft',zh:'軟的'},{en:'loud',zh:'大聲的'},
+    {en:'quiet',zh:'安靜的'},{en:'foot',zh:'腳'},{en:'arm',zh:'手臂'},{en:'leg',zh:'腿'},
+    {en:'face',zh:'臉'},{en:'hair',zh:'頭髮'},{en:'tooth',zh:'牙齒'},{en:'tongue',zh:'舌頭'},
+    {en:'neck',zh:'脖子'},{en:'back',zh:'背部'},{en:'knee',zh:'膝蓋'},{en:'finger',zh:'手指'},
+    {en:'bread',zh:'麵包'},{en:'soup',zh:'湯'},{en:'meat',zh:'肉'},{en:'candy',zh:'糖果'},
+    {en:'cookie',zh:'餅乾'},{en:'pizza',zh:'披薩'},{en:'noodle',zh:'麵條'},{en:'corn',zh:'玉米'},
+    {en:'bean',zh:'豆子'},{en:'peach',zh:'桃子'},{en:'pear',zh:'梨子'},{en:'grape',zh:'葡萄'},
+    {en:'mango',zh:'芒果'},{en:'lemon',zh:'檸檬'},{en:'melon',zh:'瓜'},{en:'cherry',zh:'櫻桃'},
+    {en:'food',zh:'食物'},{en:'tea',zh:'茶'},{en:'cup',zh:'杯子'},{en:'plate',zh:'盤子'},
+    {en:'spoon',zh:'湯匙'},{en:'fork',zh:'叉子'},{en:'knife',zh:'刀子'},{en:'bag',zh:'袋子'},
+    {en:'box',zh:'盒子'},{en:'key',zh:'鑰匙'},{en:'map',zh:'地圖'},{en:'clock',zh:'時鐘'},
+    {en:'lamp',zh:'燈'},{en:'bed',zh:'床'},{en:'hat',zh:'帽子'},{en:'shirt',zh:'襯衫'},
+    {en:'shoe',zh:'鞋子'},{en:'sock',zh:'襪子'},{en:'coat',zh:'外套'},{en:'dress',zh:'洋裝'},
+    {en:'pants',zh:'褲子'},{en:'ring',zh:'戒指'},{en:'toy',zh:'玩具'},{en:'ball',zh:'球'},
+    {en:'doll',zh:'娃娃'},{en:'kite',zh:'風箏'},{en:'drum',zh:'鼓'},{en:'bell',zh:'鈴鐺'},
+    {en:'song',zh:'歌曲'},{en:'door',zh:'門'},{en:'wall',zh:'牆'},{en:'roof',zh:'屋頂'},
+    {en:'floor',zh:'地板'},{en:'room',zh:'房間'},{en:'tree',zh:'樹'},{en:'grass',zh:'草'},
+    {en:'leaf',zh:'葉子'},{en:'seed',zh:'種子'},{en:'dirt',zh:'泥土'},{en:'rock',zh:'石頭'},
+    {en:'sand',zh:'沙子'},{en:'hill',zh:'小山'},{en:'lake',zh:'湖'},{en:'river',zh:'河流'},
+    {en:'sea',zh:'海'},{en:'sky',zh:'天空'},{en:'rain',zh:'雨'},{en:'wind',zh:'風'},
+    {en:'cloud',zh:'雲'},{en:'fire',zh:'火'},{en:'ice',zh:'冰'},{en:'smile',zh:'微笑'},
+    {en:'cry',zh:'哭'},{en:'run',zh:'跑'},{en:'walk',zh:'走'},{en:'jump',zh:'跳'},
+    {en:'sit',zh:'坐'},{en:'stand',zh:'站'},{en:'eat',zh:'吃'},{en:'drink',zh:'喝'},
+    {en:'sleep',zh:'睡覺'},{en:'read',zh:'讀'},{en:'sing',zh:'唱歌'},{en:'dance',zh:'跳舞'},
+    {en:'play',zh:'玩'},{en:'draw',zh:'畫畫'},{en:'fly',zh:'飛'},{en:'swim',zh:'游泳'},
+    {en:'happy',zh:'快樂'},{en:'sad',zh:'傷心'},{en:'angry',zh:'生氣'},{en:'scared',zh:'害怕'},
+    {en:'tired',zh:'累'},{en:'hungry',zh:'餓'},{en:'love',zh:'愛'},{en:'like',zh:'喜歡'},
+    {en:'mom',zh:'媽媽'},{en:'dad',zh:'爸爸'},{en:'baby',zh:'寶寶'},{en:'boy',zh:'男孩'},
+    {en:'girl',zh:'女孩'},{en:'kid',zh:'小孩'},{en:'man',zh:'男人'},{en:'woman',zh:'女人'},
+    {en:'name',zh:'名字'},{en:'day',zh:'天'},{en:'night',zh:'夜晚'},{en:'today',zh:'今天'},
+    {en:'yes',zh:'是'},{en:'no',zh:'不是'},{en:'hi',zh:'你好'},{en:'bye',zh:'再見'},
+    {en:'thanks',zh:'謝謝'},{en:'sorry',zh:'對不起'},{en:'please',zh:'請'},{en:'help',zh:'幫忙'}
+  ],
+  '1': [
+    {en:'table',zh:'桌子'},{en:'chair',zh:'椅子'},{en:'school',zh:'學校'},{en:'teacher',zh:'老師'},
+    {en:'friend',zh:'朋友'},{en:'mother',zh:'媽媽'},{en:'father',zh:'爸爸'},{en:'sister',zh:'姐妹'},
+    {en:'brother',zh:'兄弟'},{en:'flower',zh:'花'},{en:'tree',zh:'樹'},{en:'rain',zh:'雨'},
+    {en:'snow',zh:'雪'},{en:'wind',zh:'風'},{en:'house',zh:'房子'},{en:'door',zh:'門'},
+    {en:'window',zh:'窗戶'},{en:'car',zh:'汽車'},{en:'bus',zh:'公車'},{en:'train',zh:'火車'},
+    {en:'monkey',zh:'猴子'},{en:'rabbit',zh:'兔子'},{en:'tiger',zh:'老虎'},{en:'elephant',zh:'大象'},
+    {en:'banana',zh:'香蕉'},{en:'orange',zh:'橘子'},{en:'bread',zh:'麵包'},{en:'juice',zh:'果汁'},
+    {en:'panda',zh:'熊貓'},{en:'zebra',zh:'斑馬'},{en:'camel',zh:'駱駝'},{en:'dolphin',zh:'海豚'},
+    {en:'eagle',zh:'老鷹'},{en:'parrot',zh:'鸚鵡'},{en:'turtle',zh:'烏龜'},{en:'squirrel',zh:'松鼠'},
+    {en:'hamburger',zh:'漢堡'},{en:'spaghetti',zh:'義大利麵'},{en:'salad',zh:'沙拉'},{en:'strawberry',zh:'草莓'},
+    {en:'watermelon',zh:'西瓜'},{en:'pineapple',zh:'鳳梨'},{en:'coconut',zh:'椰子'},{en:'papaya',zh:'木瓜'},
+    {en:'grapefruit',zh:'葡萄柚'},{en:'tomato',zh:'番茄'},{en:'potato',zh:'馬鈴薯'},{en:'carrot',zh:'胡蘿蔔'},
+    {en:'onion',zh:'洋蔥'},{en:'garlic',zh:'大蒜'},{en:'mushroom',zh:'蘑菇'},{en:'cucumber',zh:'黃瓜'},
+    {en:'cabbage',zh:'高麗菜'},{en:'lettuce',zh:'生菜'},{en:'pepper',zh:'胡椒'},{en:'ginger',zh:'薑'},
+    {en:'chicken',zh:'雞肉'},{en:'beef',zh:'牛肉'},{en:'pork',zh:'豬肉'},{en:'sausage',zh:'香腸'},
+    {en:'cheese',zh:'起司'},{en:'butter',zh:'奶油'},{en:'yogurt',zh:'優格'},{en:'chocolate',zh:'巧克力'},
+    {en:'ice cream',zh:'冰淇淋'},{en:'popcorn',zh:'爆米花'},{en:'noodles',zh:'麵條'},{en:'dumpling',zh:'水餃'},
+    {en:'spring',zh:'春天'},{en:'summer',zh:'夏天'},{en:'fall',zh:'秋天'},{en:'winter',zh:'冬天'},
+    {en:'January',zh:'一月'},{en:'February',zh:'二月'},{en:'March',zh:'三月'},{en:'April',zh:'四月'},
+    {en:'May',zh:'五月'},{en:'June',zh:'六月'},{en:'July',zh:'七月'},{en:'August',zh:'八月'},
+    {en:'September',zh:'九月'},{en:'October',zh:'十月'},{en:'November',zh:'十一月'},{en:'December',zh:'十二月'},
+    {en:'Monday',zh:'星期一'},{en:'Tuesday',zh:'星期二'},{en:'Wednesday',zh:'星期三'},{en:'Thursday',zh:'星期四'},
+    {en:'Friday',zh:'星期五'},{en:'Saturday',zh:'星期六'},{en:'Sunday',zh:'星期日'},
+    {en:'breakfast',zh:'早餐'},{en:'lunch',zh:'午餐'},{en:'dinner',zh:'晚餐'},{en:'snack',zh:'點心'},
+    {en:'kitchen',zh:'廚房'},{en:'bathroom',zh:'浴室'},{en:'living room',zh:'客廳'},{en:'classroom',zh:'教室'},
+    {en:'playground',zh:'操場'},{en:'garden',zh:'花園'},{en:'zoo',zh:'動物園'},{en:'store',zh:'商店'},
+    {en:'restaurant',zh:'餐廳'},{en:'cinema',zh:'電影院'},{en:'church',zh:'教堂'},{en:'bridge',zh:'橋'},
+    {en:'street',zh:'街道'},{en:'road',zh:'道路'},{en:'airport',zh:'機場'},{en:'station',zh:'車站'},
+    {en:'pencil',zh:'鉛筆'},{en:'eraser',zh:'橡皮擦'},{en:'ruler',zh:'尺'},{en:'notebook',zh:'筆記本'},
+    {en:'crayon',zh:'蠟筆'},{en:'scissors',zh:'剪刀'},{en:'glue',zh:'膠水'},{en:'paper',zh:'紙'},
+    {en:'backpack',zh:'書包'},{en:'desk',zh:'書桌'},{en:'chalk',zh:'粉筆'},{en:'homework',zh:'作業'},
+    {en:'soccer',zh:'足球'},{en:'baseball',zh:'棒球'},{en:'tennis',zh:'網球'},{en:'volleyball',zh:'排球'},
+    {en:'badminton',zh:'羽球'},{en:'swimming',zh:'游泳'},{en:'running',zh:'跑步'},{en:'cycling',zh:'騎車'},
+    {en:'jump rope',zh:'跳繩'},{en:'skating',zh:'溜冰'},{en:'karate',zh:'空手道'},{en:'yoga',zh:'瑜伽'},
+    {en:'guitar',zh:'吉他'},{en:'piano',zh:'鋼琴'},{en:'violin',zh:'小提琴'},{en:'drum',zh:'鼓'},
+    {en:'flute',zh:'直笛'},{en:'trumpet',zh:'喇叭'},{en:'music',zh:'音樂'},{en:'art',zh:'藝術'},
+    {en:'movie',zh:'電影'},{en:'cartoon',zh:'卡通'},{en:'camera',zh:'相機'},{en:'photo',zh:'照片'},
+    {en:'computer',zh:'電腦'},{en:'tablet',zh:'平板'},{en:'phone',zh:'電話'},{en:'television',zh:'電視'},
+    {en:'radio',zh:'收音機'},{en:'internet',zh:'網路'},{en:'game',zh:'遊戲'},{en:'robot',zh:'機器人'},
+    {en:'sunny',zh:'晴天'},{en:'cloudy',zh:'多雲'},{en:'rainy',zh:'下雨'},{en:'windy',zh:'有風'},
+    {en:'stormy',zh:'暴風雨'},{en:'foggy',zh:'有霧'},{en:'warm',zh:'溫暖'},{en:'cool',zh:'涼爽'},
+    {en:'north',zh:'北'},{en:'south',zh:'南'},{en:'east',zh:'東'},{en:'west',zh:'西'},
+    {en:'circle',zh:'圓形'},{en:'square',zh:'正方形'},{en:'triangle',zh:'三角形'},{en:'rectangle',zh:'長方形'},
+    {en:'candy',zh:'糖果'},{en:'lollipop',zh:'棒棒糖'},{en:'jelly',zh:'果凍'},{en:'honey',zh:'蜂蜜'},
+    {en:'sugar',zh:'糖'},{en:'salt',zh:'鹽'},{en:'sauce',zh:'醬汁'},{en:'oil',zh:'油'},
+    {en:'family',zh:'家庭'},{en:'parent',zh:'父母'},{en:'uncle',zh:'叔叔'},{en:'aunt',zh:'阿姨'},
+    {en:'cousin',zh:'堂兄弟姊妹'},{en:'grandpa',zh:'爺爺'},{en:'grandma',zh:'奶奶'},{en:'neighbor',zh:'鄰居'},
+    {en:'people',zh:'人們'},{en:'child',zh:'孩子'},{en:'adult',zh:'大人'},{en:'doctor',zh:'醫生'},
+    {en:'nurse',zh:'護士'},{en:'police',zh:'警察'},{en:'driver',zh:'司機'},{en:'farmer',zh:'農夫'},
+    {en:'cook',zh:'廚師'},{en:'soldier',zh:'軍人'},{en:'pilot',zh:'飛行員'},{en:'artist',zh:'藝術家'},
+    {en:'body',zh:'身體'},{en:'shoulder',zh:'肩膀'},{en:'elbow',zh:'手肘'},{en:'wrist',zh:'手腕'},
+    {en:'stomach',zh:'胃'},{en:'chest',zh:'胸部'},{en:'ankle',zh:'腳踝'},{en:'thumb',zh:'大拇指'},
+    {en:'planet',zh:'行星'},{en:'rocket',zh:'火箭'},{en:'spaceship',zh:'太空船'},{en:'astronaut',zh:'太空人'},
+    {en:'magic',zh:'魔法'},{en:'castle',zh:'城堡'},{en:'king',zh:'國王'},{en:'queen',zh:'女王'},
+    {en:'prince',zh:'王子'},{en:'princess',zh:'公主'},{en:'knight',zh:'騎士'},{en:'dragon',zh:'龍'},
+    {en:'treasure',zh:'寶藏'},{en:'adventure',zh:'冒險'},{en:'story',zh:'故事'},{en:'hero',zh:'英雄'}
+  ],
+  '2': [
+    {en:'breakfast',zh:'早餐'},{en:'lunch',zh:'午餐'},{en:'dinner',zh:'晚餐'},{en:'kitchen',zh:'廚房'},
+    {en:'bedroom',zh:'臥室'},{en:'garden',zh:'花園'},{en:'park',zh:'公園'},{en:'hospital',zh:'醫院'},
+    {en:'library',zh:'圖書館'},{en:'supermarket',zh:'超市'},{en:'spring',zh:'春天'},{en:'summer',zh:'夏天'},
+    {en:'autumn',zh:'秋天'},{en:'winter',zh:'冬天'},{en:'Monday',zh:'星期一'},{en:'Friday',zh:'星期五'},
+    {en:'morning',zh:'早上'},{en:'evening',zh:'傍晚'},{en:'night',zh:'夜晚'},{en:'cloudy',zh:'多雲的'},
+    {en:'sunny',zh:'晴朗的'},{en:'pencil',zh:'鉛筆'},{en:'eraser',zh:'橡皮擦'},{en:'ruler',zh:'尺'},
+    {en:'basketball',zh:'籃球'},{en:'swimming',zh:'游泳'},{en:'music',zh:'音樂'},{en:'picture',zh:'圖畫'},
+    {en:'computer',zh:'電腦'},{en:'telephone',zh:'電話'},{en:'honest',zh:'誠實的'},{en:'brave',zh:'勇敢的'},
+    {en:'polite',zh:'有禮貌的'},{en:'patient',zh:'有耐心的'},{en:'generous',zh:'慷慨的'},{en:'curious',zh:'好奇的'},
+    {en:'clever',zh:'聰明的'},{en:'careful',zh:'小心的'},{en:'careless',zh:'粗心的'},{en:'nervous',zh:'緊張的'},
+    {en:'confident',zh:'自信的'},{en:'surprised',zh:'驚訝的'},{en:'bored',zh:'無聊的'},{en:'proud',zh:'驕傲的'},
+    {en:'jealous',zh:'嫉妒的'},{en:'lonely',zh:'孤單的'},{en:'grateful',zh:'感恩的'},{en:'embarrassed',zh:'尷尬的'},
+    {en:'Tuesday',zh:'星期二'},{en:'Wednesday',zh:'星期三'},{en:'Thursday',zh:'星期四'},{en:'Saturday',zh:'星期六'},
+    {en:'Sunday',zh:'星期日'},{en:'January',zh:'一月'},{en:'February',zh:'二月'},{en:'March',zh:'三月'},
+    {en:'April',zh:'四月'},{en:'June',zh:'六月'},{en:'July',zh:'七月'},{en:'August',zh:'八月'},
+    {en:'September',zh:'九月'},{en:'October',zh:'十月'},{en:'November',zh:'十一月'},{en:'December',zh:'十二月'},
+    {en:'bicycle',zh:'腳踏車'},{en:'motorcycle',zh:'機車'},{en:'subway',zh:'捷運'},{en:'airplane',zh:'飛機'},
+    {en:'helicopter',zh:'直升機'},{en:'taxi',zh:'計程車'},{en:'truck',zh:'卡車'},{en:'ferry',zh:'渡輪'},
+    {en:'scooter',zh:'滑板車'},{en:'ambulance',zh:'救護車'},{en:'fire truck',zh:'消防車'},{en:'tractor',zh:'拖拉機'},
+    {en:'broccoli',zh:'花椰菜'},{en:'spinach',zh:'菠菜'},{en:'celery',zh:'芹菜'},{en:'pumpkin',zh:'南瓜'},
+    {en:'eggplant',zh:'茄子'},{en:'corn',zh:'玉米'},{en:'peanut',zh:'花生'},{en:'almond',zh:'杏仁'},
+    {en:'walnut',zh:'核桃'},{en:'cashew',zh:'腰果'},{en:'raisin',zh:'葡萄乾'},{en:'blueberry',zh:'藍莓'},
+    {en:'raspberry',zh:'覆盆子'},{en:'kiwi',zh:'奇異果'},{en:'lychee',zh:'荔枝'},{en:'persimmon',zh:'柿子'},
+    {en:'uniform',zh:'制服'},{en:'sneakers',zh:'運動鞋'},{en:'scarf',zh:'圍巾'},{en:'gloves',zh:'手套'},
+    {en:'umbrella',zh:'雨傘'},{en:'backpack',zh:'背包'},{en:'pajamas',zh:'睡衣'},{en:'costume',zh:'服裝'},
+    {en:'necklace',zh:'項鍊'},{en:'bracelet',zh:'手環'},{en:'pocket',zh:'口袋'},{en:'button',zh:'鈕扣'},
+    {en:'baseball',zh:'棒球'},{en:'tennis',zh:'網球'},{en:'volleyball',zh:'排球'},{en:'badminton',zh:'羽球'},
+    {en:'golf',zh:'高爾夫'},{en:'hockey',zh:'曲棍球'},{en:'skating',zh:'溜冰'},{en:'skiing',zh:'滑雪'},
+    {en:'archery',zh:'射箭'},{en:'fencing',zh:'擊劍'},{en:'gymnastics',zh:'體操'},{en:'marathon',zh:'馬拉松'},
+    {en:'violin',zh:'小提琴'},{en:'cello',zh:'大提琴'},{en:'flute',zh:'長笛'},{en:'clarinet',zh:'單簧管'},
+    {en:'saxophone',zh:'薩克斯風'},{en:'harmonica',zh:'口琴'},{en:'xylophone',zh:'木琴'},{en:'choir',zh:'合唱團'},
+    {en:'concert',zh:'音樂會'},{en:'theater',zh:'劇院'},{en:'exhibition',zh:'展覽'},{en:'festival',zh:'節日'},
+    {en:'vacation',zh:'假期'},{en:'camping',zh:'露營'},{en:'hiking',zh:'登山'},{en:'fishing',zh:'釣魚'},
+    {en:'picnic',zh:'野餐'},{en:'barbecue',zh:'烤肉'},{en:'sightseeing',zh:'觀光'},{en:'souvenir',zh:'紀念品'},
+    {en:'passport',zh:'護照'},{en:'luggage',zh:'行李'},{en:'ticket',zh:'票'},{en:'reservation',zh:'預訂'},
+    {en:'earthquake',zh:'地震'},{en:'typhoon',zh:'颱風'},{en:'flood',zh:'洪水'},{en:'drought',zh:'乾旱'},
+    {en:'thunder',zh:'雷'},{en:'lightning',zh:'閃電'},{en:'rainbow',zh:'彩虹'},{en:'breeze',zh:'微風'},
+    {en:'hurricane',zh:'颶風'},{en:'tornado',zh:'龍捲風'},{en:'avalanche',zh:'雪崩'},{en:'tsunami',zh:'海嘯'},
+    {en:'dentist',zh:'牙醫'},{en:'veterinarian',zh:'獸醫'},{en:'pharmacist',zh:'藥師'},{en:'journalist',zh:'記者'},
+    {en:'photographer',zh:'攝影師'},{en:'architect',zh:'建築師'},{en:'lawyer',zh:'律師'},{en:'accountant',zh:'會計師'},
+    {en:'mayor',zh:'市長'},{en:'translator',zh:'翻譯員'},{en:'mechanic',zh:'技師'},{en:'electrician',zh:'電工'},
+    {en:'mail',zh:'郵件'},{en:'stamp',zh:'郵票'},{en:'envelope',zh:'信封'},{en:'package',zh:'包裹'},
+    {en:'delivery',zh:'遞送'},{en:'address',zh:'地址'},{en:'zipcode',zh:'郵遞區號'},{en:'mailbox',zh:'信箱'},
+    {en:'recycle',zh:'回收'},{en:'garbage',zh:'垃圾'},{en:'pollution',zh:'污染'},{en:'environment',zh:'環境'},
+    {en:'protect',zh:'保護'},{en:'conserve',zh:'節約'},{en:'energy',zh:'能源'},{en:'solar',zh:'太阳能'},
+    {en:'electricity',zh:'電力'},{en:'battery',zh:'電池'},{en:'plastic',zh:'塑膠'},{en:'metal',zh:'金屬'},
+    {en:'cotton',zh:'棉花'},{en:'rubber',zh:'橡膠'},{en:'glass',zh:'玻璃'},{en:'wood',zh:'木頭'},
+    {en:'fabric',zh:'布料'},{en:'leather',zh:'皮革'},{en:'ceramic',zh:'陶瓷'},{en:'bronze',zh:'青銅'},
+    {en:'continent',zh:'大洲'},{en:'ocean',zh:'海洋'},{en:'desert',zh:'沙漠'},{en:'forest',zh:'森林'},
+    {en:'jungle',zh:'叢林'},{en:'valley',zh:'山谷'},{en:'waterfall',zh:'瀑布'},{en:'volcano',zh:'火山'},
+    {en:'glacier',zh:'冰川'},{en:'cave',zh:'洞穴'},{en:'cliff',zh:'懸崖'},{en:'meadow',zh:'草地'},
+    {en:'coral',zh:'珊瑚'},{en:'tide',zh:'潮汐'},{en:'current',zh:'水流'},{en:'horizon',zh:'地平線'},
+    {en:'century',zh:'世紀'},{en:'decade',zh:'十年'},{en:'ancient',zh:'古代的'},{en:'modern',zh:'現代的'},
+    {en:'tradition',zh:'傳統'},{en:'celebration',zh:'慶祝'},{en:'ceremony',zh:'儀式'},{en:'custom',zh:'習俗'},
+    {en:'language',zh:'語言'},{en:'culture',zh:'文化'},{en:'history',zh:'歷史'},{en:'geography',zh:'地理'},
+    {en:'math',zh:'數學'},{en:'science',zh:'科學'},{en:'physics',zh:'物理'},{en:'biology',zh:'生物'},
+    {en:'chemistry',zh:'化學'},{en:'astronomy',zh:'天文'},{en:'literature',zh:'文學'},{en:'philosophy',zh:'哲學'}
+  ],
+  '3': [
+    {en:'beautiful',zh:'美麗的'},{en:'dangerous',zh:'危險的'},{en:'delicious',zh:'美味的'},{en:'important',zh:'重要的'},
+    {en:'different',zh:'不同的'},{en:'excited',zh:'興奮的'},{en:'favorite',zh:'最喜歡的'},{en:'friendly',zh:'友好的'},
+    {en:'mountain',zh:'山'},{en:'island',zh:'島嶼'},{en:'country',zh:'國家'},{en:'village',zh:'村莊'},
+    {en:'weather',zh:'天氣'},{en:'temperature',zh:'溫度'},{en:'scientist',zh:'科學家'},{en:'doctor',zh:'醫生'},
+    {en:'engineer',zh:'工程師'},{en:'dictionary',zh:'字典'},{en:'vegetable',zh:'蔬菜'},{en:'sandwich',zh:'三明治'},
+    {en:'umbrella',zh:'雨傘'},{en:'calendar',zh:'行事曆'},{en:'birthday',zh:'生日'},{en:'holiday',zh:'假期'},
+    {en:'adventure',zh:'冒險'},{en:'chocolate',zh:'巧克力'},{en:'crocodile',zh:'鱷魚'},{en:'butterfly',zh:'蝴蝶'},
+    {en:'giraffe',zh:'長頸鹿'},{en:'penguin',zh:'企鵝'},{en:'responsible',zh:'負責任的'},{en:'independent',zh:'獨立的'},
+    {en:'comfortable',zh:'舒適的'},{en:'impossible',zh:'不可能的'},{en:'necessary',zh:'必要的'},{en:'ordinary',zh:'普通的'},
+    {en:'extraordinary',zh:'非凡的'},{en:'magnificent',zh:'壯麗的'},{en:'enthusiastic',zh:'熱情的'},{en:'sympathetic',zh:'同情的'},
+    {en:'determined',zh:'堅定的'},{en:'generous',zh:'大方的'},{en:'modest',zh:'謙虛的'},{en:'ambitious',zh:'有野心的'},
+    {en:'graceful',zh:'優雅的'},{en:'horrible',zh:'可怕的'},{en:'ridiculous',zh:'荒謬的'},{en:'mysterious',zh:'神秘的'},
+    {en:'republic',zh:'共和國'},{en:'democracy',zh:'民主'},{en:'government',zh:'政府'},{en:'president',zh:'總統'},
+    {en:'parliament',zh:'國會'},{en:'election',zh:'選舉'},{en:'citizen',zh:'公民'},{en:'constitution',zh:'憲法'},
+    {en:'economy',zh:'經濟'},{en:'industry',zh:'工業'},{en:'agriculture',zh:'農業'},{en:'commerce',zh:'商業'},
+    {en:'investment',zh:'投資'},{en:'inflation',zh:'通貨膨脹'},{en:'currency',zh:'貨幣'},{en:'budget',zh:'預算'},
+    {en:'export',zh:'出口'},{en:'import',zh:'進口'},{en:'tariff',zh:'關稅'},{en:'revenue',zh:'收入'},
+    {en:'microscope',zh:'顯微鏡'},{en:'telescope',zh:'望遠鏡'},{en:'thermometer',zh:'溫度計'},{en:'barometer',zh:'氣壓計'},
+    {en:'experiment',zh:'實驗'},{en:'hypothesis',zh:'假設'},{en:'conclusion',zh:'結論'},{en:'observation',zh:'觀察'},
+    {en:'molecule',zh:'分子'},{en:'electron',zh:'電子'},{en:'proton',zh:'質子'},{en:'neutron',zh:'中子'},
+    {en:'gravity',zh:'重力'},{en:'magnet',zh:'磁鐵'},{en:'radiation',zh:'輻射'},{en:'evolution',zh:'進化'},
+    {en:'photosynthesis',zh:'光合作用'},{en:'ecosystem',zh:'生態系統'},{en:'biodiversity',zh:'生物多樣性'},{en:'habitat',zh:'棲息地'},
+    {en:'endangered',zh:'瀕臨絕種的'},{en:'extinction',zh:'滅絕'},{en:'conservation',zh:'保育'},{en:'sustainability',zh:'永續性'},
+    {en:'peninsula',zh:'半島'},{en:'archipelago',zh:'群島'},{en:'plateau',zh:'高原'},{en:'canyon',zh:'峽谷'},
+    {en:'tundra',zh:'凍原'},{en:'savanna',zh:'草原'},{en:'oasis',zh:'綠洲'},{en:'delta',zh:'三角洲'},
+    {en:'equator',zh:'赤道'},{en:'latitude',zh:'緯度'},{en:'longitude',zh:'經度'},{en:'hemisphere',zh:'半球'},
+    {en:'metamorphosis',zh:'變態'},{en:'mammal',zh:'哺乳動物'},{en:'reptile',zh:'爬蟲動物'},{en:'amphibian',zh:'兩棲動物'},
+    {en:'invertebrate',zh:'無脊椎動物'},{en:'predator',zh:'掠食者'},{en:'prey',zh:'獵物'},{en:'camouflage',zh:'偽裝'},
+    {en:'hibernation',zh:'冬眠'},{en:'migration',zh:'遷徙'},{en:'instinct',zh:'本能'},{en:'territory',zh:'領地'},
+    {en:'symphony',zh:'交響曲'},{en:'rhythm',zh:'節奏'},{en:'melody',zh:'旋律'},{en:'harmony',zh:'和聲'},
+    {en:'composition',zh:'作曲'},{en:'orchestra',zh:'管弦樂團'},{en:'instrument',zh:'樂器'},{en:'performance',zh:'表演'},
+    {en:'sculpture',zh:'雕塑'},{en:'architecture',zh:'建築'},{en:'masterpiece',zh:'傑作'},{en:'aesthetic',zh:'美學的'},
+    {en:'impressionism',zh:'印象派'},{en:'realism',zh:'寫實主義'},{en:'abstract',zh:'抽象的'},{en:'perspective',zh:'透視'},
+    {en:'algorithm',zh:'演算法'},{en:'database',zh:'資料庫'},{en:'software',zh:'軟體'},{en:'hardware',zh:'硬體'},
+    {en:'network',zh:'網路'},{en:'encryption',zh:'加密'},{en:'bandwidth',zh:'頻寬'},{en:'firewall',zh:'防火牆'},
+    {en:'artificial',zh:'人工的'},{en:'autonomous',zh:'自主的'},{en:'virtual',zh:'虛擬的'},{en:'digital',zh:'數位的'},
+    {en:'nanotechnology',zh:'奈米科技'},{en:'biotechnology',zh:'生物技術'},{en:'robotics',zh:'機器人學'},{en:'genetics',zh:'遺傳學'},
+    {en:'democracy',zh:'民主'},{en:'liberty',zh:'自由'},{en:'equality',zh:'平等'},{en:'justice',zh:'正義'},
+    {en:'discrimination',zh:'歧視'},{en:'prejudice',zh:'偏見'},{en:'tolerance',zh:'容忍'},{en:'compassion',zh:'同情'},
+    {en:'empathy',zh:'同理心'},{en:'conscience',zh:'良知'},{en:'dignity',zh:'尊嚴'},{en:'integrity',zh:'正直'},
+    {en:'metaphor',zh:'隱喻'},{en:'paragraph',zh:'段落'},{en:'vocabulary',zh:'詞彙'},{en:'grammar',zh:'文法'},
+    {en:'pronunciation',zh:'發音'},{en:'comprehension',zh:'理解'},{en:'composition',zh:'作文'},{en:'manuscript',zh:'手稿'},
+    {en:'novel',zh:'小說'},{en:'poetry',zh:'詩歌'},{en:'essay',zh:'論文'},{en:'biography',zh:'傳記'},
+    {en:'encyclopedia',zh:'百科全書'},{en:'appendix',zh:'附錄'},{en:'bibliography',zh:'書目'},{en:'annotation',zh:'註解'},
+    {en:'cardiovascular',zh:'心血管的'},{en:'respiratory',zh:'呼吸的'},{en:'digestive',zh:'消化的'},{en:'skeletal',zh:'骨骼的'},
+    {en:'neurological',zh:'神經的'},{en:'immune',zh:'免疫的'},{en:'metabolism',zh:'新陳代謝'},{en:'antibody',zh:'抗體'},
+    {en:'symptom',zh:'症狀'},{en:'diagnosis',zh:'診斷'},{en:'prescription',zh:'處方'},{en:'vaccination',zh:'接種疫苗'},
+    {en:'epidemic',zh:'流行病'},{en:'pandemic',zh:'大流行病'},{en:'quarantine',zh:'隔離'},{en:'pharmacy',zh:'藥局'},
+    {en:'hemisphere',zh:'半球'},{en:'atmosphere',zh:'大氣層'},{en:'stratosphere',zh:'平流層'},{en:'greenhouse',zh:'溫室'},
+    {en:'deforestation',zh:'濫墾濫伐'},{en:'desertification',zh:'沙漠化'},{en:'erosion',zh:'侵蝕'},{en:'contamination',zh:'污染'},
+    {en:'renewable',zh:'可再生的'},{en:'biodegradable',zh:'可分解的'},{en:'emission',zh:'排放'},{en:'carbon',zh:'碳'},
+    {en:'oxygen',zh:'氧'},{en:'hydrogen',zh:'氫'},{en:'nitrogen',zh:'氮'},{en:'mineral',zh:'礦物'},
+    {en:'fossil',zh:'化石'},{en:'petroleum',zh:'石油'},{en:'geothermal',zh:'地熱的'},{en:'turbine',zh:'渦輪機'}
+  ]
+};
+
+// ===== ENEMIES =====
+const ENEMY_TYPES = [
+  {emoji:'🟢',name:'小史萊姆',color:'#51cf66',hpBase:3},
+  {emoji:'👻',name:'幽靈寶寶',color:'#a29bfe',hpBase:3},
+  {emoji:'🍄',name:'蘑菇精',color:'#ff922b',hpBase:4},
+  {emoji:'🐙',name:'小章魚',color:'#ff6b9d',hpBase:4},
+  {emoji:'🦊',name:'小狐狸',color:'#fdcb6e',hpBase:5},
+  {emoji:'🐲',name:'迷你龍',color:'#6c5ce7',hpBase:5},
+  {emoji:'🎃',name:'南瓜怪',color:'#e17055',hpBase:4},
+  {emoji:'🌸',name:'花仙子',color:'#fd79a8',hpBase:3},
+  {emoji:'🐸',name:'呱呱蛙',color:'#00b894',hpBase:3},
+  {emoji:'🦄',name:'獨角獸',color:'#e056fd',hpBase:6},
+];
+
+// ===== AUDIO ENGINE =====
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx, soundOn = true;
+function ensureAudio(){if(!audioCtx)audioCtx=new AudioCtx();if(audioCtx.state==='suspended')audioCtx.resume();}
+
+function tone(f,d,t='sine',v=0.13){if(!soundOn)return;try{ensureAudio();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=t;o.frequency.value=f;g.gain.setValueAtTime(v,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+d);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+d);}catch(e){}}
+
+function sfxCorrect(){tone(523,0.1);setTimeout(()=>tone(659,0.1),70);setTimeout(()=>tone(784,0.18),140);}
+function sfxWrong(){tone(220,0.25,'sawtooth',0.1);setTimeout(()=>tone(165,0.3,'sawtooth',0.1),120);}
+function sfxClick(){tone(880,0.05,'sine',0.08);}
+function sfxProp(){tone(1047,0.08);setTimeout(()=>tone(1319,0.08),60);setTimeout(()=>tone(1568,0.12),120);}
+function sfxShield(){tone(440,0.15,'triangle',0.1);setTimeout(()=>tone(660,0.2,'triangle',0.1),100);}
+function sfxBomb(){tone(100,0.4,'sawtooth',0.15);setTimeout(()=>tone(60,0.5,'square',0.1),100);}
+function sfxTimeFreeze(){tone(1200,0.1,'sine',0.08);setTimeout(()=>tone(1500,0.15,'sine',0.08),80);}
+function sfxCombo(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,0.12),i*60));}
+function sfxLevelUp(){[440,554,659,880].forEach((f,i)=>setTimeout(()=>tone(f,0.18,'triangle',0.12),i*100));}
+function sfxGameOver(){[784,659,523,392].forEach((f,i)=>setTimeout(()=>tone(f,0.25,'triangle',0.12),i*160));}
+function sfxVictory(){[523,659,784,1047,784,1047,1319].forEach((f,i)=>setTimeout(()=>tone(f,0.18),i*90));}
+function sfxRecord(){sfxVictory();setTimeout(()=>[1319,1568,1319,1568].forEach((f,i)=>setTimeout(()=>tone(f,0.15),i*80)),800);}
+
+document.getElementById('soundToggle').onclick=()=>{soundOn=!soundOn;document.getElementById('soundToggle').textContent=soundOn?'🔊':'🔇';if(soundOn)sfxClick();};
+
+// ===== BG PARTICLES =====
+(function(){const c=document.getElementById('bgParticles');const colors=['#ff6b9d','#c44dff','#4da6ff','#51cf66','#ffd43b','#22b8cf'];for(let i=0;i<25;i++){const d=document.createElement('div');d.className='bg-particle';const s=Math.random()*6+3;d.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*100}%;background:${colors[i%colors.length]};animation-duration:${Math.random()*10+8}s;animation-delay:${Math.random()*10}s;`;c.appendChild(d);}})();
+
+// ===== GAME STATE =====
+let grade='K', stages=[], currentStage=0, playerHp=5, playerMaxHp=5;
+let enemyHp=0, enemyMaxHp=0, currentEnemy=null, currentWord=null, currentChoices=[];
+let score=0, combo=0, maxCombo=0, totalCorrect=0, totalWrong=0, kills=0;
+let props={hint:3,shield:0,bomb:1,time:2};
+let shieldActive=false, timeFrozen=false, hintUsed=false;
+let qTimer=null, timeLeft=0, timeLimit=12, answering=false;
+let usedWords=new Set();
+
+function selectGrade(g){sfxClick();grade=g;document.querySelectorAll('.grade-btn').forEach(b=>b.classList.remove('selected'));document.querySelector(`.grade-btn[data-grade="${g}"]`).classList.add('selected');}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+
+// ===== START ADVENTURE =====
+function startAdventure(){
+  sfxClick();
+  const name=document.getElementById('playerName').value.trim()||'無名勇者';
+  document.getElementById('playerName').value=name;
+  const stageCount=parseInt(document.getElementById('stageCount').value);
+  // Generate stages
+  stages=[];
+  const pool=[...ENEMY_TYPES];
+  for(let i=0;i<stageCount;i++){
+    const e=pool[i%pool.length];
+    const hpBonus=Math.floor(i/3);
+    stages.push({...e, hp:e.hpBase+hpBonus});
+  }
+  // Reset
+  currentStage=0;score=0;combo=0;maxCombo=0;totalCorrect=0;totalWrong=0;kills=0;
+  playerHp=5;playerMaxHp=5;
+  props={hint:3,shield:2,bomb:1,time:2};
+  shieldActive=false;usedWords=new Set();
+  showScreen('screenBattle');
+  updatePropsUI();
+  showLevelTransition();
+}
+
+function showLevelTransition(){
+  currentEnemy=stages[currentStage];
+  enemyHp=currentEnemy.hp;enemyMaxHp=currentEnemy.hp;
+  const lt=document.getElementById('levelTransition');
+  document.getElementById('ltLevelText').textContent=`第 ${currentStage+1} 關`;
+  document.getElementById('ltEnemyPreview').textContent=currentEnemy.emoji;
+  document.getElementById('ltEnemyIntro').textContent=`${currentEnemy.name} 出現了！`;
+  lt.style.display='flex';
+  try{sfxLevelUp();}catch(e){}
+  setTimeout(()=>{lt.style.display='none';startBattle();},1800);
+}
+
+function startBattle(){
+  answering=false;hintUsed=false;
+  document.getElementById('bStage').textContent=currentStage+1;
+  document.getElementById('bScore').textContent=score;
+  document.getElementById('bCombo').textContent=combo;
+  document.getElementById('enemyNameLabel').textContent=`${currentEnemy.emoji} ${currentEnemy.name}`;
+  document.getElementById('enemySprite').textContent=currentEnemy.emoji;
+  document.getElementById('enemySprite').className='enemy-sprite';
+  document.getElementById('enemyNameDisplay').textContent=currentEnemy.name;
+  document.getElementById('battleFeedback').textContent='';
+  document.getElementById('hintArea').innerHTML='';
+  updateHpBars();
+  nextQuestion();
+}
+
+function updateHpBars(){
+  const ep=Math.max(0,enemyHp/enemyMaxHp*100);
+  const pp=Math.max(0,playerHp/playerMaxHp*100);
+  document.getElementById('enemyHpFill').style.width=ep+'%';
+  document.getElementById('enemyHpText').textContent=`${Math.max(0,enemyHp)}/${enemyMaxHp}`;
+  document.getElementById('playerHpFill').style.width=pp+'%';
+  document.getElementById('playerHpText').textContent=`${Math.max(0,playerHp)}/${playerMaxHp}`;
+}
+
+function updatePropsUI(){
+  document.getElementById('propHintCount').textContent=props.hint;
+  document.getElementById('propShieldCount').textContent=props.shield;
+  document.getElementById('propBombCount').textContent=props.bomb;
+  document.getElementById('propTimeCount').textContent=props.time;
+  document.getElementById('propHint').classList.toggle('disabled',props.hint<=0);
+  document.getElementById('propShield').classList.toggle('disabled',props.shield<=0||shieldActive);
+  document.getElementById('propBomb').classList.toggle('disabled',props.bomb<=0);
+  document.getElementById('propTime').classList.toggle('disabled',props.time<=0);
+}
+
+// ===== QUESTIONS =====
+function nextQuestion(){
+  if(playerHp<=0){endAdventure();return;}
+  if(enemyHp<=0){
+    kills++;
+    const sprite=document.getElementById('enemySprite');
+    sprite.className='enemy-sprite dying';
+    sfxVictory();
+    setTimeout(()=>{
+      currentStage++;
+      if(currentStage>=stages.length){endAdventure();}
+      else{showLevelTransition();}
+    },1000);
+    return;
+  }
+  answering=false;hintUsed=false;
+  document.getElementById('hintArea').innerHTML='';
+  document.getElementById('battleFeedback').textContent='';
+  // Pick word & choices (no repeats)
+  const wordPool=WORDS[grade];
+  let available=wordPool.filter(w=>!usedWords.has(w.en));
+  if(available.length<4){usedWords.clear();available=wordPool;}
+  const correct=available[Math.floor(Math.random()*available.length)];
+  usedWords.add(correct.en);
+  currentWord=correct;
+  let wrongs=wordPool.filter(w=>w.zh!==correct.zh).sort(()=>Math.random()-0.5).slice(0,3);
+  currentChoices=[correct,...wrongs].sort(()=>Math.random()-0.5);
+  // Render
+  document.getElementById('qPrompt').textContent='這個英文單字的意思是？';
+  document.getElementById('qWord').textContent=correct.en;
+  const grid=document.getElementById('choicesGrid');
+  grid.innerHTML='';
+  currentChoices.forEach((c,i)=>{
+    const btn=document.createElement('button');
+    btn.className='choice-btn';
+    btn.textContent=c.zh;
+    btn.onclick=()=>selectAnswer(i,btn);
+    grid.appendChild(btn);
+  });
+  // Timer
+  timeLimit = grade==='K'?15:grade==='1'?12:grade==='2'?10:8;
+  timeLeft=timeLimit;timeFrozen=false;
+  document.getElementById('timerFill').style.width='100%';
+  clearInterval(qTimer);
+  qTimer=setInterval(()=>{
+    if(timeFrozen)return;
+    timeLeft-=0.1;
+    if(timeLeft<=0){timeLeft=0;clearInterval(qTimer);handleTimeout();}
+    document.getElementById('timerFill').style.width=(timeLeft/timeLimit*100)+'%';
+  },100);
+}
+
+function selectAnswer(idx,btn){
+  if(answering)return;
+  answering=true;clearInterval(qTimer);
+  const correct=currentChoices[idx]===currentWord;
+  document.querySelectorAll('.choice-btn').forEach(b=>{
+    const ci=currentChoices.indexOf(currentWord);
+    if(currentChoices.indexOf(currentChoices[[...document.querySelectorAll('.choice-btn')].indexOf(b)])===ci)b.classList.add('correct');
+  });
+  if(correct){
+    btn.classList.add('correct');
+    sfxCorrect();
+    combo++;if(combo>maxCombo)maxCombo=combo;
+    totalCorrect++;
+    const dmg=1+Math.floor(combo/3);
+    enemyHp-=dmg;
+    score+=10+combo*2;
+    document.getElementById('bScore').textContent=score;
+    document.getElementById('bCombo').textContent=combo;
+    document.getElementById('battleFeedback').textContent=getCorrectMsg();
+    document.getElementById('battleFeedback').className='battle-feedback feedback-correct';
+    // Enemy hit animation
+    const sprite=document.getElementById('enemySprite');
+    sprite.className='enemy-sprite hit';
+    setTimeout(()=>sprite.className='enemy-sprite',500);
+    showDmgPopup(`-${dmg}`,true);
+    if(combo>=3){sfxCombo();showComboText(`🔥 ${combo} 連擊！傷害+${dmg}`);}
+    else if(combo>=2){showComboText(`⚡ ${combo} 連擊`);}
+    else{document.getElementById('comboText').textContent='';}
+    updateHpBars();
+    setTimeout(()=>nextQuestion(),900);
+  } else {
+    btn.classList.add('wrong');
+    // Highlight correct
+    document.querySelectorAll('.choice-btn').forEach((b,bi)=>{if(currentChoices[bi]===currentWord)b.classList.add('correct');});
+    if(shieldActive){
+      shieldActive=false;sfxShield();
+      document.getElementById('battleFeedback').textContent='🛡️ 護盾擋住了一次傷害！';
+      document.getElementById('battleFeedback').className='battle-feedback';
+      showDmgPopup('🛡️',false);
+    } else {
+      sfxWrong();combo=0;totalWrong++;playerHp--;
+      document.getElementById('bCombo').textContent=combo;
+      document.getElementById('battleFeedback').textContent=`${getWrongMsg()} 正確答案：${currentWord.zh}`;
+      document.getElementById('battleFeedback').className='battle-feedback feedback-wrong';
+      showDmgPopup('-1 ❤️',false);
+    }
+    document.getElementById('comboText').textContent='';
+    updateHpBars();updatePropsUI();
+    setTimeout(()=>nextQuestion(),1600);
+  }
+}
+
+function handleTimeout(){
+  if(answering)return;answering=true;
+  if(shieldActive){
+    shieldActive=false;sfxShield();
+    document.getElementById('battleFeedback').textContent='🛡️ 護盾擋住了超時懲罰！';
+    document.getElementById('battleFeedback').className='battle-feedback';
+  } else {
+    sfxWrong();combo=0;totalWrong++;playerHp--;
+    document.getElementById('bCombo').textContent=combo;
+    document.getElementById('battleFeedback').textContent=`⏰ 時間到！正確答案：${currentWord.zh}`;
+    document.getElementById('battleFeedback').className='battle-feedback feedback-wrong';
+    showDmgPopup('-1 ❤️',false);
+  }
+  document.getElementById('comboText').textContent='';
+  // Highlight correct
+  document.querySelectorAll('.choice-btn').forEach((b,bi)=>{if(currentChoices[bi]===currentWord)b.classList.add('correct');});
+  updateHpBars();updatePropsUI();
+  setTimeout(()=>nextQuestion(),1600);
+}
+
+// ===== PROPS =====
+function useProp(type){
+  if(answering)return;
+  if(type==='hint'&&props.hint>0){
+    props.hint--;sfxProp();hintUsed=true;
+    const first=currentWord.zh[0];
+    document.getElementById('hintArea').innerHTML=`<div class="hint-text">💡 提示：答案是以「${first}」開頭</div>`;
+    // Remove wrong choices that don't match hint
+    updatePropsUI();
+  }
+  else if(type==='shield'&&props.shield>0&&!shieldActive){
+    props.shield--;shieldActive=true;sfxShield();
+    document.getElementById('battleFeedback').textContent='🛡️ 護盾啟動！下次答錯不會扣血';
+    document.getElementById('battleFeedback').className='battle-feedback';
+    updatePropsUI();
+  }
+  else if(type==='bomb'&&props.bomb>0){
+    props.bomb--;sfxBomb();
+    enemyHp-=2;score+=5;
+    document.getElementById('bScore').textContent=score;
+    const sprite=document.getElementById('enemySprite');
+    sprite.className='enemy-sprite hit';setTimeout(()=>sprite.className='enemy-sprite',500);
+    showDmgPopup('💥 -2',true);
+    document.getElementById('battleFeedback').textContent='💣 炸彈攻擊！造成 2 點傷害！';
+    document.getElementById('battleFeedback').className='battle-feedback feedback-correct';
+    updateHpBars();updatePropsUI();
+    if(enemyHp<=0)setTimeout(()=>nextQuestion(),800);
+  }
+  else if(type==='time'&&props.time>0){
+    props.time--;sfxTimeFreeze();timeFrozen=true;
+    document.getElementById('battleFeedback').textContent='⏰ 時間凍結！不用擔心計時器了';
+    document.getElementById('battleFeedback').className='battle-feedback';
+    updatePropsUI();
+  }
+}
+
+function showDmgPopup(text,onEnemy){
+  const area=document.getElementById('enemyArea');
+  const d=document.createElement('div');
+  d.className='dmg-popup';
+  d.textContent=text;
+  d.style.color=onEnemy?'var(--green)':'var(--red)';
+  d.style.left=Math.random()*60+20+'%';
+  d.style.top='30%';
+  area.appendChild(d);
+  setTimeout(()=>d.remove(),1000);
+}
+
+function showComboText(t){
+  const el=document.getElementById('comboText');
+  el.textContent=t;el.className='combo-text active';
+  setTimeout(()=>el.className='combo-text',300);
+}
+
+function getCorrectMsg(){const m=['太棒了！✨','好厲害！💪','正確！🌟','漂亮！🎉','完美！🔥','厲害死了！😎','答對了！⚡'];return m[Math.floor(Math.random()*m.length)];}
+function getWrongMsg(){const m=['嗚嗚～💦','再加油！','哎呀～🤔','別灰心！💪','下次會更好！'];return m[Math.floor(Math.random()*m.length)];}
+
+// ===== END ADVENTURE =====
+function endAdventure(){
+  clearInterval(qTimer);
+  const won=playerHp>0;
+  const total=totalCorrect+totalWrong;
+  const acc=total>0?Math.round(totalCorrect/total*100):0;
+  const finalScore=Math.round(score*(acc/100)+maxCombo*5+kills*10);
+  if(won)sfxVictory();else sfxGameOver();
+  // Stars
+  let starCount=finalScore>=200?3:finalScore>=100?2:finalScore>0?1:0;
+  document.getElementById('resultStars').textContent='⭐'.repeat(starCount)||'💔';
+  document.getElementById('resultScore').textContent=finalScore;
+  document.getElementById('rCorrect').textContent=totalCorrect;
+  document.getElementById('rWrong').textContent=totalWrong;
+  document.getElementById('rCombo').textContent=maxCombo;
+  document.getElementById('rKills').textContent=kills;
+  // Save
+  const name=document.getElementById('playerName').value.trim()||'無名勇者';
+  const record={name,score:finalScore,correct:totalCorrect,total,combo:maxCombo,kills,grade,won,date:new Date().toLocaleDateString()};
+  let lb=getLB();
+  const wasTop=lb.length<10||lb.length>=10&&finalScore>(lb[lb.length-1]?.score||0);
+  lb.push(record);lb.sort((a,b)=>b.score-a.score);lb=lb.slice(0,20);
+  localStorage.setItem('k123_lb',JSON.stringify(lb));
+  const rank=lb.findIndex(r=>r.name===record.name&&r.score===record.score)+1;
+  const banner=document.getElementById('resultBanner');
+  if(rank<=10&&wasTop){banner.classList.remove('hidden');setTimeout(sfxRecord,500);}
+  else{banner.classList.add('hidden');}
+  showScreen('screenResult');
+}
+
+// ===== LEADERBOARD =====
+function getLB(){try{return JSON.parse(localStorage.getItem('k123_lb')||'[]');}catch{return[];}}
+function clearLB(){if(confirm('確定清除所有英雄榜紀錄？')){localStorage.removeItem('k123_lb');renderLB();sfxClick();}}
+function renderLB(){
+  const lb=getLB();
+  const medals=['🥇','🥈','🥉'];
+  const gradeNames={K:'K 幼兒園','1':'1年級','2':'2年級','3':'3年級'};
+  let h='';
+  if(!lb.length)h='<div style="text-align:center;padding:40px;color:var(--text2);">尚無紀錄<br>快來挑戰吧！🌟</div>';
+  else{
+    h='<table class="lb-table"><thead><tr><th>排名</th><th>勇者</th><th>分數</th><th>正確率</th><th>連擊</th><th>年級</th></tr></thead><tbody>';
+    lb.forEach((r,i)=>{
+      const rc=i<3?['rank-gold','rank-silver','rank-bronze'][i]:'';
+      const m=i<3?`<span style="font-size:1.3em">${medals[i]}</span>`:(i+1);
+      const acc=r.total>0?Math.round(r.correct/r.total*100):0;
+      h+=`<tr class="${rc}"><td>${m}</td><td>${esc(r.name)}</td><td>${r.score}</td><td>${acc}%</td><td>${r.combo}</td><td>${gradeNames[r.grade]||r.grade}</td></tr>`;
+    });
+    h+='</tbody></table>';
+  }
+  document.getElementById('lbContent').innerHTML=h;
+}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+
+window.addEventListener('load',()=>document.getElementById('playerName').focus());
+</script>
+</body>
+</html>

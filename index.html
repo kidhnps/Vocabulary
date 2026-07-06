@@ -89,7 +89,11 @@ select.text-input option{background:#2d1b69;color:var(--text);}
 /* Question */
 .question-box{text-align:center;padding:15px 0;}
 .q-prompt{font-size:1em;color:var(--text2);margin-bottom:8px;}
-.q-word{font-size:2.5em;font-weight:900;background:linear-gradient(135deg,var(--yellow),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:15px;min-height:60px;}
+.q-word-row{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:15px;}
+.q-word{font-size:2.5em;font-weight:900;background:linear-gradient(135deg,var(--yellow),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;min-height:60px;}
+.speak-btn{background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.15);border-radius:50%;width:48px;height:48px;font-size:1.4em;cursor:pointer;transition:0.3s;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.speak-btn:hover{background:rgba(255,212,59,0.2);border-color:var(--yellow);transform:scale(1.15);}
+.speak-btn:active{transform:scale(0.95);}
 .choices-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .choice-btn{padding:14px 10px;border-radius:14px;border:2px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:var(--text);font-size:1.05em;font-weight:600;cursor:pointer;transition:0.2s;text-align:center;}
 .choice-btn:hover{border-color:var(--cyan);background:rgba(77,166,255,0.1);transform:scale(1.03);}
@@ -255,7 +259,7 @@ select.text-input option{background:#2d1b69;color:var(--text);}
     <div class="combo-text" id="comboText"></div>
     <div class="question-box">
       <div class="q-prompt" id="qPrompt">這個英文單字的意思是？</div>
-      <div class="q-word" id="qWord">apple</div>
+      <div class="q-word-row"><div class="q-word" id="qWord">apple</div><button class="speak-btn" id="speakBtn" onclick="speakCurrentWord()">🔈</button></div>
       <div id="hintArea"></div>
       <div class="choices-grid" id="choicesGrid"></div>
     </div>
@@ -576,6 +580,22 @@ function sfxRecord(){sfxVictory();setTimeout(()=>[1319,1568,1319,1568].forEach((
 
 document.getElementById('soundToggle').onclick=()=>{soundOn=!soundOn;document.getElementById('soundToggle').textContent=soundOn?'🔊':'🔇';if(soundOn)sfxClick();};
 
+// ===== TEXT-TO-SPEECH =====
+function speakWord(word){
+  if(!soundOn||!window.speechSynthesis)return;
+  try{
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(word);
+    u.lang='en-US';u.rate=0.85;u.pitch=1.1;
+    const voices=speechSynthesis.getVoices();
+    const enVoice=voices.find(v=>v.lang.startsWith('en'));
+    if(enVoice)u.voice=enVoice;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+function speakCurrentWord(){if(currentWord)speakWord(currentWord.en);}
+if(window.speechSynthesis){speechSynthesis.onvoiceschanged=()=>speechSynthesis.getVoices();speechSynthesis.getVoices();}
+
 // ===== BG PARTICLES =====
 (function(){const c=document.getElementById('bgParticles');const colors=['#ff6b9d','#c44dff','#4da6ff','#51cf66','#ffd43b','#22b8cf'];for(let i=0;i<25;i++){const d=document.createElement('div');d.className='bg-particle';const s=Math.random()*6+3;d.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*100}%;background:${colors[i%colors.length]};animation-duration:${Math.random()*10+8}s;animation-delay:${Math.random()*10}s;`;c.appendChild(d);}})();
 
@@ -725,6 +745,7 @@ function selectAnswer(idx,btn){
   if(correct){
     btn.classList.add('correct');
     sfxCorrect();
+    speakWord(currentWord.en);
     combo++;if(combo>maxCombo)maxCombo=combo;
     totalCorrect++;
     const dmg=1+Math.floor(combo/3);
@@ -755,6 +776,7 @@ function selectAnswer(idx,btn){
       showDmgPopup('🛡️',false);
     } else {
       sfxWrong();combo=0;totalWrong++;playerHp--;
+      speakWord(currentWord.en);
       document.getElementById('bCombo').textContent=combo;
       document.getElementById('battleFeedback').textContent=`${getWrongMsg()} 正確答案：${currentWord.zh}`;
       document.getElementById('battleFeedback').className='battle-feedback feedback-wrong';
@@ -774,6 +796,7 @@ function handleTimeout(){
     document.getElementById('battleFeedback').className='battle-feedback';
   } else {
     sfxWrong();combo=0;totalWrong++;playerHp--;
+    speakWord(currentWord.en);
     document.getElementById('bCombo').textContent=combo;
     document.getElementById('battleFeedback').textContent=`⏰ 時間到！正確答案：${currentWord.zh}`;
     document.getElementById('battleFeedback').className='battle-feedback feedback-wrong';
